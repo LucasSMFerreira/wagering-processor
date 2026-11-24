@@ -1,0 +1,30 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: wagering
+      POSTGRES_PASSWORD: wagering
+      POSTGRES_DB: wagering
+    ports: ["5432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/01-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wagering -d wagering"]
+      interval: 2s
+      retries: 30
+
+  localstack:
+    image: localstack/localstack:4.14
+    environment:
+      SERVICES: sqs
+    ports: ["4566:4566"]
+    volumes:
+      - ./docker/localstack-init.sh:/etc/localstack/init/ready.d/01-queues.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "awslocal sqs get-queue-url --queue-name wager-transactions.fifo"]
+      interval: 2s
+      retries: 30
+
+volumes:
+  pgdata:

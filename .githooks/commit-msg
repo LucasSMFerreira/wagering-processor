@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+msg_file="$1"
+titulo=$(head -n1 "$msg_file")
+
+if [[ "$titulo" =~ ^(Merge|Revert|fixup!|squash!) ]]; then
+  exit 0
+fi
+
+if ! [[ "$titulo" =~ ^(feat|fix|test|docs|chore|refactor|perf|ci|build):\ [^[:upper:][:space:]] ]]; then
+  echo "Commit recusado: use 'tipo: descrição em minúsculo'."
+  echo "  tipos: feat fix test docs chore refactor perf ci build"
+  exit 1
+fi
+
+if (( ${#titulo} > 72 )); then
+  echo "Commit recusado: título com ${#titulo} caracteres (máximo 72)."
+  exit 1
+fi
+
+if [[ "$titulo" =~ \.$ ]]; then
+  echo "Commit recusado: sem ponto final no título."
+  exit 1
+fi
+
+if [[ -n "$(sed -n '2p' "$msg_file")" ]]; then
+  echo "Commit recusado: deixe a linha 2 em branco."
+  exit 1
+fi
+
+robotico='robust|comprehensive|enhance|leverage|seamless|robusto|abrangente|aprimora'
+achou=$(grep -v '^#' "$msg_file" | grep -oiE "$robotico" | head -n1)
+if [[ -n "$achou" ]]; then
+  echo "Commit recusado: '$achou' tem sotaque de texto gerado."
+  exit 1
+fi

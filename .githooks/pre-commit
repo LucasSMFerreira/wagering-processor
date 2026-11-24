@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -e
+# Nothing to check before the first .ts file exists.
+if ! find src test -name '*.ts' 2>/dev/null | grep -q .; then
+  exit 0
+fi
+bunx tsc --noEmit
+if ls test/unit/*.test.ts >/dev/null 2>&1; then
+  LOG_LEVEL=silent bun test test/unit
+fi
