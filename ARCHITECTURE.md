@@ -18,5 +18,9 @@ A chave é consultada depois de travar a carteira, então duas cópias da mesma 
 O teste prova isso com 50 envios simultâneos da mesma aposta: um débito só.
 ## Ledger e reconciliação
 ## Mensageria e outbox
+
+Referências fora de ordem
+Um ROLLBACK ou REFUND pode chegar antes da transação que ele referencia, porque a fila tem vários consumidores e o provedor pode mandar o estorno pela API enquanto a BET ainda está na fila. Por isso ele não é recusado na hora. A transação fica em `PENDING_REFERENCE` e o outbox publica `WagerTransactionPendingReference`, avisando o provedor que o estorno foi recebido mas está esperando. Um worker volta a checar com backoff exponencial: 1 s, 2 s, 4 s até 512 s, em 10 tentativas, cerca de 17 minutos no total. Os dois valores ficam no `config.ts` (`PENDING_REFERENCE_MAX_ATTEMPTS` e `PENDING_REFERENCE_BASE_DELAY_MS`). Se a referência aparece nesse intervalo, o estorno é aplicado normalmente e sai `WagerTransactionProcessed`. Se não aparece, a transação vira `REJECTED` com `REFERENCE_NOT_FOUND`, e o evento `WagerTransactionRejected` avisa o provedor. A ação desse código é `fix-payload`: o provedor precisa conferir a referência e reenviar. Esperar para sempre deixaria transações penduradas sem resposta, e recusar na hora puniria o provedor por um problema de transporte.
+
 ## Autenticação
 ## Limitações
