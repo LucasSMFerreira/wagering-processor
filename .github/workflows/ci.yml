@@ -1,0 +1,41 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: wagering
+          POSTGRES_PASSWORD: wagering
+          POSTGRES_DB: wagering
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U wagering" --health-interval 2s --health-retries 30
+      localstack:
+        image: localstack/localstack:4.14
+        env:
+          SERVICES: sqs
+        ports: ["4566:4566"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.4"
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run test:unit
+      - name: wait for localstack
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf localhost:4566/_localstack/health | grep -q '"sqs": "\(available\|running\)"' && exit 0
+            sleep 2
+          done
+          exit 1
+      - run: LOG_LEVEL=silent bun test test/integration --timeout 90000
