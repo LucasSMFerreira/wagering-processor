@@ -88,6 +88,8 @@ describe("three instances at the same time", () => {
   });
 
   test("an instance killed with SIGKILL mid-traffic, then restarted: the books still close", async () => {
+    // Only this test's outbox rows count: other test files share the database and may leave rows in backoff.
+    const startedAt = new Date();
     const w = await wallet("1000.00");
     const bets = Array.from({ length: 60 }, () => httpBody(command(w, "BET", "1.00")));
     const traffic = bets.map((b, i) =>
@@ -107,7 +109,12 @@ describe("three instances at the same time", () => {
 
     const report = await post(instances[2]!.url, `/wallets/${w.id}/reconciliation`, {});
     expect(report.body.consistent).toBe(true);
-    await eventually(async () => (await sql(orm, "select 1 from outbox_messages where published_at is null")).length === 0, 15_000);
+    await eventually(
+      async () =>
+        (await sql(orm, "select 1 from outbox_messages where published_at is null and occurred_at >= ?", [startedAt]))
+          .length === 0,
+      15_000,
+    );
     await assertLedgerInvariant(orm);
   });
 });
