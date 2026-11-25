@@ -4,7 +4,7 @@ Medições feitas no meu homelab, não copiadas de outra máquina.
 
 ## Ambiente
 
-- Máquina: <CPU>, <N> núcleos, <RAM> de memória
+- Máquina: Intel(R) Core(TM) i3-7020U CPU @ 2.30GHz, 4 núcleos, 7,2Gi de memória
 - Docker Compose com 3 réplicas, PostgreSQL 16, LocalStack 4.14, tudo na mesma máquina
 - Comando: `DURATION_S=30 CONCURRENCY=32 WALLETS=50 HOT_WALLET_SHARE=0.2 bun run test:load`
 
